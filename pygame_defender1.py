@@ -21,6 +21,9 @@ screen = pygame.display.set_mode(size)
 all_sprites_list = pygame.sprite.Group()
  
 pygame.display.set_caption("Defender 1")
+
+# load the sounds:
+laser_sound = pygame.mixer.Sound("laser5.ogg")
  
 # Loop until the user clicks the close button.
 done = False
@@ -71,21 +74,26 @@ while not done:
         if event.type == pygame.QUIT:
             done = True
         if event.type == pygame.KEYDOWN:
+            # press space to fire
             if event.key == pygame.K_SPACE:
+                laser_sound.play()
                 bullet = Bullet()
                 bullet.direction = 1
-                rect = copy.copy(ship.rect)
-                rect[0] += ship.image.get_size()[0]
-                rect[1] += int(ship.image.get_size()[1]/2)
+                rect = copy.copy(ship.rect) # copy of the ship's position
+                rect[0] += ship.image.get_size()[0] # front of the ship
+                rect[1] += int(ship.image.get_size()[1]/2) # middle of the ship
                 bullet.rect = rect
                 bullet.make_long(bullet.min_size)
                 all_sprites_list.add(bullet)
                 bullets.append(bullet)
+                                
+            # if the up or down key is pressed, set the direction of movement
             if event.key == pygame.K_UP:
                 ship.updown = -1
             if event.key == pygame.K_DOWN:
-                ship.updown = 1
+                ship.updown = 1            
         if event.type == pygame.KEYUP:
+            # when you stop pressing, stop moving!
             if event.key == pygame.K_UP or event.key == pygame.K_DOWN:
                 ship.updown = 0
                 
