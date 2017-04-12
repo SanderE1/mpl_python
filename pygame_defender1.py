@@ -38,7 +38,7 @@ class Ship(pygame.sprite.Sprite):
         self.image = pygame.image.load("defender_ship.png").convert()
         self.image.set_colorkey(WHITE)
         self.rect = self.image.get_rect()
-        self.rect.x = 400
+        self.rect.x = 100
         self.rect.y = 250
         self.updown = 0
         self.speed = 8

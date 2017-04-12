@@ -4,6 +4,7 @@ Asteroids!
  
 import pygame
 import math
+import copy
 
 def rotatePoint(centerPoint,point,angle):
     """Rotates a point around another centerPoint. Angle is in degrees.
@@ -35,6 +36,7 @@ done = False
 # Used to manage how fast the screen updates
 clock = pygame.time.Clock()
 all_sprites_list = pygame.sprite.Group()
+bullets = []
 pygame.display.set_caption("Astroids")
 
 class Ship(pygame.sprite.Sprite):
@@ -62,6 +64,13 @@ class Ship(pygame.sprite.Sprite):
         norm = math.sqrt(vector[0] ** 2 + vector[1] ** 2)
         vector = [vector[0] / norm, vector[1] / norm]
         return vector
+
+class Bullet(pygame.sprite.Sprite):
+    def __init__(self):
+        pygame.sprite.Sprite.__init__(self)
+        self.image = pygame.Surface([2,2])
+        self.image.fill(WHITE)
+        self.speed = 5
         
 
 ship = Ship()
@@ -80,6 +89,16 @@ while not done:
                 ship.angle = -1
             if event.key == pygame.K_UP:
                 ship.speed = 10
+            if event.key == pygame.K_SPACE:
+                bullet = Bullet()
+                bullet.rect = bullet.image.get_rect()
+                bullet.rect = copy.copy(ship.rect)
+                bullet.rect.x += ship.pts[0][0]
+                bullet.rect.y += ship.pts[0][1]
+                bullet.direction = ship.get_direction()
+                bullets.append(bullet)
+                all_sprites_list.add(bullet)
+                
         if event.type == pygame.KEYUP:
             if event.key == pygame.K_RIGHT or event.key == pygame.K_LEFT:
                 ship.angle = 0
@@ -94,6 +113,12 @@ while not done:
     ship.rect.x += (vect[0]*ship.speed)
     ship.rect.y += (vect[1]*ship.speed)
 
+    for bullet in bullets:
+        bullet.rect.x += (bullet.direction[0] * bullet.speed)
+        bullet.rect.y += (bullet.direction[1] * bullet.speed)
+        if bullet.rect.x < 0 or bullet.rect.x > size[0] or bullet.rect.y < 0 or bullet.rect.y > size[1]:
+                bullets.remove(bullet)
+
     # wrap ship:
     if ship.rect.x < 0:
         ship.rect.x = size[0]
@@ -106,7 +131,9 @@ while not done:
 
     # decay speed:
     if ship.speed > 0:
-        ship.speed -=0.1
+        ship.speed -= 0.1
+    if ship.speed < 0:
+        ship.speed = 0
     
     
     
