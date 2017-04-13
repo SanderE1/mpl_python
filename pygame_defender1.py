@@ -4,6 +4,7 @@ Pygame Defender first week
  
 import pygame
 import copy
+import random
  
 # Define some colors
 BLACK = (0, 0, 0)
@@ -41,9 +42,7 @@ class Ship(pygame.sprite.Sprite):
         self.rect.x = 100
         self.rect.y = 250
         self.updown = 0
-        self.speed = 8
-
-        
+        self.speed = 8        
 
 class Bullet(pygame.sprite.Sprite):
     def __init__(self):
@@ -53,19 +52,28 @@ class Bullet(pygame.sprite.Sprite):
         self.image.set_colorkey(WHITE)
         self.rect = self.image.get_rect()
         self.size = self.image.get_size()
-        self.speed = 5        
+        self.speed = 20        
         self.min_size = 4
         self.max_size = self.image.get_size()[0]
 
     def make_long(self, new_size):
         self.image = pygame.transform.scale(self.image2, (new_size, self.size[1]))
             
-        
+class Alien(pygame.sprite.Sprite):
+    def __init__(self, y):
+        pygame.sprite.Sprite.__init__(self)
+        self.image = pygame.image.load("alien.png").convert()
+        self.image.set_colorkey(WHITE)
+        self.rect = self.image.get_rect()
+        self.rect.x = size[0] - 50
+        self.rect.y = y
+        self.speed = 10
         
  
 ship = Ship()
 all_sprites_list.add(ship)
 bullets = []
+aliens = []
 
 # -------- Main Program Loop -----------
 while not done:
@@ -76,16 +84,17 @@ while not done:
         if event.type == pygame.KEYDOWN:
             # press space to fire
             if event.key == pygame.K_SPACE:
-                laser_sound.play()
-                bullet = Bullet()
-                bullet.direction = 1
-                rect = copy.copy(ship.rect) # copy of the ship's position
-                rect[0] += ship.image.get_size()[0] # front of the ship
-                rect[1] += int(ship.image.get_size()[1]/2) # middle of the ship
-                bullet.rect = rect
-                bullet.make_long(bullet.min_size)
-                all_sprites_list.add(bullet)
-                bullets.append(bullet)
+                if len(bullets) < 3:
+                    laser_sound.play()
+                    bullet = Bullet()
+                    bullet.direction = 1
+                    rect = copy.copy(ship.rect) # copy of the ship's position
+                    rect[0] += ship.image.get_size()[0] # front of the ship
+                    rect[1] += int(ship.image.get_size()[1]/2) # middle of the ship
+                    bullet.rect = rect
+                    bullet.make_long(bullet.min_size)
+                    all_sprites_list.add(bullet)
+                    bullets.append(bullet)
                                 
             # if the up or down key is pressed, set the direction of movement
             if event.key == pygame.K_UP:
@@ -108,8 +117,22 @@ while not done:
         else: bullet.rect.x += bullet.speed
         if bullet.rect.x > size[0]:
             bullets.remove(bullet)
+            all_sprites_list.remove(bullet)
 
-    
+    add_alien = random.randint(0,10)
+    if add_alien == 9 and len(aliens) < 6:
+        print "adding alien"
+        alien_y = random.randint(0,size[1])
+        alien = Alien(alien_y)
+        aliens.append(alien)
+        all_sprites_list.add(alien)
+
+    # move the aliens
+    for alien in aliens:
+        alien.rect.x -= alien.speed
+        if alien.rect.x < 0:
+            aliens.remove(alien)
+            all_sprites_list.remove(alien)
  
     # --- Screen-clearing code goes here
     screen.fill(WHITE)

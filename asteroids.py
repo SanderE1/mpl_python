@@ -46,7 +46,7 @@ class Ship(pygame.sprite.Sprite):
         pygame.sprite.Sprite.__init__(self)
         self.image = pygame.Surface([26,26])
         self.pts = [[15, 0],[5,25], [15,15], [25,25]]
-        pygame.draw.aalines(self.image, WHITE, True, self.pts,2)
+        pygame.draw.lines(self.image, WHITE, True, self.pts,2)
         self.rect = self.image.get_rect()
         self.rect.x = 300
         self.rect.y = 300
