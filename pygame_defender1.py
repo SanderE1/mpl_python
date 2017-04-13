@@ -20,6 +20,8 @@ screen = pygame.display.set_mode(size)
 
 # set up sprite lists
 all_sprites_list = pygame.sprite.Group()
+aliens = pygame.sprite.Group()
+bullets = pygame.sprite.Group()
  
 pygame.display.set_caption("Defender 1")
 
@@ -72,8 +74,6 @@ class Alien(pygame.sprite.Sprite):
  
 ship = Ship()
 all_sprites_list.add(ship)
-bullets = []
-aliens = []
 
 # -------- Main Program Loop -----------
 while not done:
@@ -94,7 +94,7 @@ while not done:
                     bullet.rect = rect
                     bullet.make_long(bullet.min_size)
                     all_sprites_list.add(bullet)
-                    bullets.append(bullet)
+                    bullets.add(bullet)
                                 
             # if the up or down key is pressed, set the direction of movement
             if event.key == pygame.K_UP:
@@ -118,13 +118,14 @@ while not done:
         if bullet.rect.x > size[0]:
             bullets.remove(bullet)
             all_sprites_list.remove(bullet)
+           
 
     add_alien = random.randint(0,10)
     if add_alien == 9 and len(aliens) < 6:
         print "adding alien"
         alien_y = random.randint(0,size[1])
         alien = Alien(alien_y)
-        aliens.append(alien)
+        aliens.add(alien)
         all_sprites_list.add(alien)
 
     # move the aliens
@@ -133,6 +134,8 @@ while not done:
         if alien.rect.x < 0:
             aliens.remove(alien)
             all_sprites_list.remove(alien)
+
+    hit_list = pygame.sprite.groupcollide(bullets, aliens, True, True)
  
     # --- Screen-clearing code goes here
     screen.fill(WHITE)
