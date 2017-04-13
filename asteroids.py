@@ -29,6 +29,8 @@ size = (600, 600)
 screen = pygame.display.set_mode(size)
  
 pygame.display.set_caption("My Game")
+
+shoot_sound = pygame.mixer.Sound('pew.wav')
  
 # Loop until the user clicks the close button.
 done = False
@@ -71,6 +73,7 @@ class Bullet(pygame.sprite.Sprite):
         self.image = pygame.Surface([2,2])
         self.image.fill(WHITE)
         self.speed = 5
+        self.life = 0
         
 
 ship = Ship()
@@ -90,6 +93,7 @@ while not done:
             if event.key == pygame.K_UP:
                 ship.speed = 10
             if event.key == pygame.K_SPACE:
+                shoot_sound.play()
                 bullet = Bullet()
                 bullet.rect = bullet.image.get_rect()
                 bullet.rect = copy.copy(ship.rect)
@@ -115,9 +119,22 @@ while not done:
 
     for bullet in bullets:
         bullet.rect.x += (bullet.direction[0] * bullet.speed)
-        bullet.rect.y += (bullet.direction[1] * bullet.speed)
-        if bullet.rect.x < 0 or bullet.rect.x > size[0] or bullet.rect.y < 0 or bullet.rect.y > size[1]:
-                bullets.remove(bullet)
+        bullet.rect.y += (bullet.direction[1] * bullet.speed)     
+            
+        if bullet.rect.x < 0:
+            bullet.rect.x = size[0]
+        elif bullet.rect.x > size[0]:
+            bullet.rect.x = 0
+        if bullet.rect.y < 0:
+            bullet.rect.y = size[1]
+        elif bullet.rect.y > size[1]:
+            bullet.rect.y = 0
+        bullet.life += 1
+        if bullet.life > 100:
+            bullets.remove(bullet)
+            all_sprites_list.remove(bullet)
+
+        
 
     # wrap ship:
     if ship.rect.x < 0:
