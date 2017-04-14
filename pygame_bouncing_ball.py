@@ -26,6 +26,7 @@ done = False
 ball_pos = [350,250] # center of the screen
 ball_size = 20
 ball_direction = [1,1]
+ball_max_speed = 10
 
 # set up our ship
 ship_pos = [350,450]
@@ -69,9 +70,11 @@ while not done:
 
     # We can do it all in a single for loop, efficiency!
     for i in [0,1]:
-        if ball_pos[i] > size[i] or ball_pos[i] == 0:
+        if ball_direction[i] < ball_max_speed:
+            ball_direction[i] *= 1.01
+        if ball_pos[i] >= size[i] or ball_pos[i] <= 0:
             ball_direction[i] *= -1
-        ball_pos[i] += ball_direction[i]       
+        ball_pos[i] += int(ball_direction[i])
     
     # update ship location:
     ship_pos[0] += ship_direction
