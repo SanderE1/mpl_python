@@ -16,6 +16,8 @@ pygame.init()
  
 # Set the width and height of the screen [width, height]
 size = (800, 500)
+screenbottom = size[1]
+screentop = 0
 screen = pygame.display.set_mode(size)
 
 # set up sprite lists
@@ -110,7 +112,10 @@ while not done:
  
     # --- Game logic should go here
     ship.rect.y += (ship.speed * ship.updown)
-
+    if ship.rect.y > screenbottom:
+        ship.rect.y = screentop
+    if ship.rect.y < screentop:
+        ship.rect.y = screenbottom
     for bullet in bullets:
         if bullet.image.get_size()[0]<bullet.max_size:
             bullet.make_long(bullet.image.get_size()[0] + bullet.speed)
