@@ -126,7 +126,7 @@ all_sprites_list.add(ship)
 # -------- Main Program Loop -----------
 while not done:
     # --- Main event loop
-      if astroid_amount < 7:
+    if astroid_amount < 7:
         asteroid = Asteroid()
         all_sprites_list.add(asteroid)
         asteroids.add(asteroid)
