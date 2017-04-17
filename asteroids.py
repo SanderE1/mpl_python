@@ -43,6 +43,7 @@ all_sprites_list = pygame.sprite.Group()
 bullets = pygame.sprite.Group()
 asteroids = pygame.sprite.Group()
 score = 0
+astroid_amount = 0
 
 pygame.display.set_caption("Astroids")
 
@@ -120,16 +121,16 @@ def updateScore(screen, score):
     
 ship = Ship()
 all_sprites_list.add(ship)
-
-for i in range (0,6):
-    asteroid = Asteroid()
-    all_sprites_list.add(asteroid)
-    asteroids.add(asteroid)
     
 
 # -------- Main Program Loop -----------
 while not done:
     # --- Main event loop
+    if astroid_amount < 7:
+        asteroid = Asteroid()
+        all_sprites_list.add(asteroid)
+        asteroids.add(asteroid)
+        astroid_amount += 1
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             done = True
@@ -195,6 +196,7 @@ while not done:
     hit_dict = pygame.sprite.groupcollide(asteroids, bullets, True, True)
     for asteroid in hit_dict.keys():
         score += 1
+        astroid_amount -= 1
         print "score:{}".format(score)
     
 
