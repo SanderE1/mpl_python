@@ -5,6 +5,8 @@ Asteroids!
 import pygame
 import math
 import copy
+import random
+import os
 
 def rotatePoint(centerPoint,point,angle):
     """Rotates a point around another centerPoint. Angle is in degrees.
@@ -38,7 +40,10 @@ done = False
 # Used to manage how fast the screen updates
 clock = pygame.time.Clock()
 all_sprites_list = pygame.sprite.Group()
-bullets = []
+bullets = pygame.sprite.Group()
+asteroids = pygame.sprite.Group()
+score = 0
+
 pygame.display.set_caption("Astroids")
 
 class Ship(pygame.sprite.Sprite):
@@ -46,7 +51,8 @@ class Ship(pygame.sprite.Sprite):
         pygame.sprite.Sprite.__init__(self)
         self.image = pygame.Surface([26,26])
         self.pts = [[15, 0],[5,25], [15,15], [25,25]]
-        pygame.draw.lines(self.image, WHITE, True, self.pts,2)
+        pygame.draw.aalines(self.image, WHITE, True, self.pts,2)
+        self.image.set_colorkey(BLACK)
         self.rect = self.image.get_rect()
         self.rect.x = 300
         self.rect.y = 300
@@ -75,9 +81,51 @@ class Bullet(pygame.sprite.Sprite):
         self.speed = 5
         self.life = 0
         
+class Asteroid(pygame.sprite.Sprite):
+    def __init__(self):
+        pygame.sprite.Sprite.__init__(self)
+        self.image = pygame.Surface([50,50])
+        self.pts = [[10,0],[20,10],[30,0],[40,10],[30,20],[40,30],[30,40],[20,45],[10,45],[0,30],[0,20]]
+        pygame.draw.lines(self.image, WHITE, True, self.pts,2)
+        self.image.set_colorkey(BLACK)
+        self.rect = self.image.get_rect()
+        x = random.randint(0,size[0])
+        y = random.randint(0,size[1])
+        self.rect.x = x
+        self.rect.y = y
+        self.direction = self.randomDirection()
+        self.speed = random.randint(2,5)
 
+    def randomDirection(self):
+        randVect = [random.randint(-10,10),random.randint(-10,10)]
+        norm = math.sqrt(randVect[0] ** 2 + randVect[1] ** 2)
+        vector = [randVect[0] / norm, randVect[1] / norm]
+        return vector
+
+def wrap(sprite):
+    if sprite.rect.x < 0:
+        sprite.rect.x = size[0]
+    elif sprite.rect.x > size[0]:
+        sprite.rect.x = 0
+    if sprite.rect.y < 0:
+        sprite.rect.y = size[1]
+    elif sprite.rect.y > size[1]:
+        sprite.rect.y = 0
+    
+def updateScore(screen, score):
+    message = "Score:{}".format(score)
+    font = pygame.font.SysFont("Courier New", 30)
+    text = font.render(message, False, WHITE)
+    screen.blit(text, (10,10))
+    
 ship = Ship()
 all_sprites_list.add(ship)
+
+for i in range (0,6):
+    asteroid = Asteroid()
+    all_sprites_list.add(asteroid)
+    asteroids.add(asteroid)
+    
 
 # -------- Main Program Loop -----------
 while not done:
@@ -100,7 +148,7 @@ while not done:
                 bullet.rect.x += ship.pts[0][0]
                 bullet.rect.y += ship.pts[0][1]
                 bullet.direction = ship.get_direction()
-                bullets.append(bullet)
+                bullets.add(bullet)
                 all_sprites_list.add(bullet)
                 
         if event.type == pygame.KEYUP:
@@ -110,47 +158,47 @@ while not done:
  
     # --- Game logic should go here
 
+    # update the ship:
     if ship.angle != 0:
         ship.rotate(ship.angle)
 
     vect = ship.get_direction()
     ship.rect.x += (vect[0]*ship.speed)
     ship.rect.y += (vect[1]*ship.speed)
-
-    for bullet in bullets:
-        bullet.rect.x += (bullet.direction[0] * bullet.speed)
-        bullet.rect.y += (bullet.direction[1] * bullet.speed)     
-            
-        if bullet.rect.x < 0:
-            bullet.rect.x = size[0]
-        elif bullet.rect.x > size[0]:
-            bullet.rect.x = 0
-        if bullet.rect.y < 0:
-            bullet.rect.y = size[1]
-        elif bullet.rect.y > size[1]:
-            bullet.rect.y = 0
-        bullet.life += 1
-        if bullet.life > 100:
-            bullets.remove(bullet)
-            all_sprites_list.remove(bullet)
-
-        
-
-    # wrap ship:
-    if ship.rect.x < 0:
-        ship.rect.x = size[0]
-    if ship.rect.x > size[0]:
-        ship.rect.x = 0
-    if ship.rect.y < 0:
-        ship.rect.y = size[1]
-    if ship.rect.y > size[1]:
-        ship.rect.y = 0
-
+    wrap(ship)
     # decay speed:
     if ship.speed > 0:
         ship.speed -= 0.1
     if ship.speed < 0:
         ship.speed = 0
+
+    # update all the bullets:
+    for bullet in bullets:
+        bullet.rect.x += (bullet.direction[0] * bullet.speed)
+        bullet.rect.y += (bullet.direction[1] * bullet.speed)     
+            
+        wrap(bullet)
+        
+        bullet.life += 1
+        if bullet.life > 100:
+            bullets.remove(bullet)
+            all_sprites_list.remove(bullet)
+
+    # update all the asteroids:
+    for asteroid in asteroids:
+        asteroid.rect.x += (asteroid.direction[0] * asteroid.speed)
+        asteroid.rect.y += (asteroid.direction[1] * asteroid.speed)
+        wrap(asteroid)   
+
+
+    # do we have any bullets coliding w/ asteroids?
+    hit_dict = pygame.sprite.groupcollide(asteroids, bullets, True, True)
+    for asteroid in hit_dict.keys():
+        score += 1
+        print "score:{}".format(score)
+    
+
+
     
     
     
@@ -165,6 +213,7 @@ while not done:
  
     # --- Drawing code should go here
     all_sprites_list.draw(screen)
+    updateScore(screen, score)
  
     # --- Go ahead and update the screen with what we've drawn.
     pygame.display.flip()
