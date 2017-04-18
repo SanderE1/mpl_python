@@ -17,7 +17,11 @@ def rotatePoint(centerPoint,point,angle):
     temp_point = temp_point[0]+centerPoint[0] , temp_point[1]+centerPoint[1]
     return temp_point
 
-
+def normalize_vector(vector):
+    norm = math.sqrt(vector[0] ** 2 + vector[1] ** 2)
+    vector = [vector[0] / norm, vector[1] / norm]
+    return vector
+    
 # Define some colors
 BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
@@ -70,8 +74,7 @@ class Ship(pygame.sprite.Sprite):
         # we know pts[0] and pts[2] give us a vector we are "pointing" at:
         vector = [self.pts[0][0] - self.pts[2][0], self.pts[0][1] - self.pts[2][1]]
         # normalize:
-        norm = math.sqrt(vector[0] ** 2 + vector[1] ** 2)
-        vector = [vector[0] / norm, vector[1] / norm]
+        vector = normalize_vector(vector)
         return vector
 
 class Bullet(pygame.sprite.Sprite):
@@ -83,25 +86,49 @@ class Bullet(pygame.sprite.Sprite):
         self.life = 0
         
 class Asteroid(pygame.sprite.Sprite):
-    def __init__(self):
+    def __init__(self, parent=None):
         pygame.sprite.Sprite.__init__(self)
-        self.image = pygame.Surface([50,50])
-        self.pts = [[10,0],[20,10],[30,0],[40,10],[30,20],[40,30],[30,40],[20,45],[10,45],[0,30],[0,20]]
-        pygame.draw.lines(self.image, WHITE, True, self.pts,2)
-        self.image.set_colorkey(BLACK)
-        self.rect = self.image.get_rect()
-        x = random.randint(0,size[0])
-        y = random.randint(0,size[1])
-        self.rect.x = x
-        self.rect.y = y
-        self.direction = self.randomDirection()
-        self.speed = random.randint(2,5)
+        
+        # let's have 3 point definitions, and 3 sizes:
+        self.sizes=[ 2,3,5 ]
 
-    def randomDirection(self):
-        randVect = [random.randint(-10,10),random.randint(-10,10)]
-        norm = math.sqrt(randVect[0] ** 2 + randVect[1] ** 2)
-        vector = [randVect[0] / norm, randVect[1] / norm]
-        return vector
+        if parent:
+            self.size=parent.size - 1
+        else:
+            self.size = 2 # start at the biggest
+        
+        self.pts = [
+        [[2,0],[4,2],[6,0],[9,2],[6,4],[8,6],[6,8],[4,9],[2,9],[0,6],[0,4]],
+        [[4,0],[6,0],[9,2],[9,3],[6,5],[9,7],[8,9],[6,8],[4,9],[2,5],[0,2],[2,4]],
+        [[2,0],[4,2],[6,0],[8,2],[6,4],[9,5],[7,6],[9,7],[7,9],[4,7],[3,8],[0,7],[3,5],[0,3]]        
+        ]      
+
+        self.draw_image(self.size)       
+        self.rect = self.image.get_rect()
+        if parent:
+            self.rect.x = parent.rect.x
+            self.rect.y = parent.rect.y
+            self.direction = normalize_vector(parent.direction + self.random_direction() )
+            self.speed = parent.speed + random.randint(-1,3)
+            
+        else:
+            x = random.randint(0,size[0])
+            y = random.randint(0,size[1])
+            self.rect.x = x
+            self.rect.y = y
+            self.direction = self.random_direction()
+            self.speed = random.randint(2,5)
+
+    def draw_image(self, size_index):
+        sz = self.sizes[size_index]
+        self.image = pygame.Surface([sz*10,sz*10])
+        sized_pts = [ [pt[0] * sz, pt[1] * sz] for pt in self.pts[size_index]]
+        pygame.draw.lines(self.image, WHITE, True, sized_pts,2)
+        self.image.set_colorkey(BLACK)
+
+    def random_direction(self):
+        rand_vect = [random.randint(-10,10),random.randint(-10,10)]        
+        return normalize_vector(rand_vect)
 
 def wrap(sprite):
     if sprite.rect.x < 0:
@@ -121,16 +148,16 @@ def updateScore(screen, score):
     
 ship = Ship()
 all_sprites_list.add(ship)
+
+for i in range (0,4):
+    asteroid = Asteroid()
+    asteroids.add(asteroid)
+    all_sprites_list.add(asteroid)
     
 
 # -------- Main Program Loop -----------
 while not done:
     # --- Main event loop
-    if astroid_amount < 7:
-        asteroid = Asteroid()
-        all_sprites_list.add(asteroid)
-        asteroids.add(asteroid)
-        astroid_amount += 1
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             done = True
@@ -169,7 +196,7 @@ while not done:
     wrap(ship)
     # decay speed:
     if ship.speed > 0:
-        ship.speed -= 0.1
+        ship.speed *= .99
     if ship.speed < 0:
         ship.speed = 0
 
@@ -193,14 +220,17 @@ while not done:
 
 
     # do we have any bullets coliding w/ asteroids?
-    hit_dict = pygame.sprite.groupcollide(asteroids, bullets, True, True)
+    hit_dict = pygame.sprite.groupcollide(asteroids, bullets, False, True)
     for asteroid in hit_dict.keys():
         score += 1
-        astroid_amount -= 1
-        print "score:{}".format(score)
-    
-
-
+        if asteroid.size > 0:
+            for i in [0,1]:
+                new_asteroid = Asteroid(asteroid)
+                asteroids.add(new_asteroid)
+                all_sprites_list.add(new_asteroid)
+        asteroid.kill()
+            
+            
     
     
     
