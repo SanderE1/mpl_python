@@ -1,11 +1,11 @@
 """
-Pygame Defender first week
+  Pygame Defender first week
 """
- 
+
 import pygame
 import copy
 import random
- 
+
 # Define some colors
 BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
@@ -16,7 +16,7 @@ def update_score(screen, score):
     message = "Score:{}".format(score)
     font = pygame.font.SysFont("Verdana", 30)
     text = font.render(message, False, BLACK)
-    screen.blit(text, (10,10))
+    screen.blit(text, (10, 10))
  
 pygame.init()
  
@@ -32,6 +32,7 @@ lives = 3
 all_sprites_list = pygame.sprite.Group()
 aliens = pygame.sprite.Group()
 bullets = pygame.sprite.Group()
+explosions = pygame.sprite.Group()
  
 pygame.display.set_caption("Defender 1")
 
@@ -102,6 +103,7 @@ class Explosion(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.rect.x = x
         self.rect.y = y
+        self.life = 0
         
  
 ship = Ship()
@@ -176,11 +178,18 @@ while not done:
         score += 1
         explosion = Explosion(hit.rect.x, hit.rect.y)
         all_sprites_list.add(explosion)
+        explosions.add(explosion)
 
     hit = pygame.sprite.spritecollideany(ship,aliens)
     if hit and not ship.exploding:
         ship.explode()
         
+    for explosion in explosions:
+        explosion.life += 1
+        if explosion.life > 20:
+            explosion.kill()
+
+    # free ship every 100 points:
     if score % 100 == 0:
         lives += 1
  
