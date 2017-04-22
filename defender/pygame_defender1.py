@@ -116,7 +116,7 @@ all_sprites_list.add(ship)
 # -------- Main Program Loop -----------
 while not done:
     # --- Main event loop
-    if score = 20 and ship_upgraded == 0:
+    if score == 20 and ship_upgraded == 0:
         ship_upgraded = 1
         score = score - 20
         ship.upgrade()
