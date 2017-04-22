@@ -27,6 +27,7 @@ screentop = 0
 screen = pygame.display.set_mode(size)
 score = 0
 lives = 3
+ship_upgraded = 0
 
 # set up sprite lists
 all_sprites_list = pygame.sprite.Group()
@@ -62,6 +63,9 @@ class Ship(pygame.sprite.Sprite):
     def explode(self):
         ship.exploding = True
         self.image = pygame.image.load("exploding.png").convert()
+        
+    def upgrade(self):
+        self.image = pygame.image.load("coolship.png").convert()
 
 class Bullet(pygame.sprite.Sprite):
     def __init__(self):
@@ -112,6 +116,10 @@ all_sprites_list.add(ship)
 # -------- Main Program Loop -----------
 while not done:
     # --- Main event loop
+    if score = 20 and ship_upgraded == 0:
+        ship_upgraded = 1
+        score = score - 20
+        ship.upgrade()
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             done = True
