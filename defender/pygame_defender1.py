@@ -11,6 +11,7 @@ BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
 GREEN = (0, 255, 0)
 RED = (255, 0, 0)
+BLUE = (0,0,255)
 
 
  
@@ -40,20 +41,31 @@ done = False
  
 # Used to manage how fast the screen updates
 clock = pygame.time.Clock()
+ship = None
 
 class Game():
     def __init__(self):
         self.lives = 3
         self.score = 0
+        self.over = True
 
     def update_screen(self, screen):
-        message = "Score:{}".format(self.score)
-        font = pygame.font.SysFont("Verdana", 30)
-        text = font.render(message, False, BLACK)
-        screen.blit(text, (10, 10))
-        message = "Lives:{}".format(self.lives)
-        text = font.render(message, False, BLACK)
-        screen.blit(text, (600, 10))
+        if not self.over:
+            message = "Score:{}".format(self.score)
+            font = pygame.font.SysFont("Verdana", 30)
+            text = font.render(message, False, BLACK)
+            screen.blit(text, (10, 10))
+            message = "Lives:{}".format(self.lives)
+            text = font.render(message, False, BLACK)
+            screen.blit(text, (600, 10))
+        else:
+            message = "Game Over!"
+            message2 = "Press any key to play"
+            font = pygame.font.SysFont("Verdana", 50)
+            text = font.render(message, False, BLUE)
+            screen.blit(text, (300, 200))
+            text = font.render(message2, False, RED)
+            screen.blit(text, (300, 300))
 
 # our ship class
 class Ship(pygame.sprite.Sprite):
@@ -74,6 +86,8 @@ class Ship(pygame.sprite.Sprite):
     def explode(self):
         ship.exploding = True
         self.image = pygame.image.load("exploding.png").convert()
+        self.image.set_colorkey(WHITE)
+
         
     def upgrade(self):
         self.image = pygame.image.load("coolship.png").convert()
@@ -123,8 +137,7 @@ class Explosion(pygame.sprite.Sprite):
         self.life = 0
         
  
-ship = Ship()
-all_sprites_list.add(ship)
+
 game = Game()
 
 # -------- Main Program Loop -----------
@@ -137,9 +150,9 @@ while not done:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             done = True
-        if event.type == pygame.KEYDOWN:
+        if event.type == pygame.KEYDOWN and not game.over:
             # press space to fire
-            if event.key == pygame.K_SPACE:
+            if event.key == pygame.K_SPACE and not ship.exploding:
                 if len(bullets) < 3:
                     laser_sound.play()
                     bullet = Bullet()
@@ -156,7 +169,12 @@ while not done:
             if event.key == pygame.K_UP and not ship.exploding:
                 ship.updown = -1
             if event.key == pygame.K_DOWN and not ship.exploding:
-                ship.updown = 1            
+                ship.updown = 1
+        if event.type == pygame.KEYDOWN and game.over:          
+            ship = Ship()
+            game = Game()
+            game.over = False
+            all_sprites_list.add(ship)
         if event.type == pygame.KEYUP:
             # when you stop pressing, stop moving!
             if event.key == pygame.K_UP or event.key == pygame.K_DOWN:
@@ -165,22 +183,23 @@ while not done:
 
  
     # --- Game logic should go here
-    ship.rect.y += (ship.speed * ship.updown)
-    if ship.rect.y > screenbottom:
-        ship.rect.y = screentop
-    if ship.rect.y < screentop:
-        ship.rect.y = screenbottom
-    for bullet in bullets:
-        if bullet.image.get_size()[0]<bullet.max_size:
-            bullet.make_long(bullet.image.get_size()[0] + bullet.speed)
-        else: bullet.rect.x += bullet.speed
-        if bullet.rect.x > size[0]:
-            bullets.remove(bullet)
-            all_sprites_list.remove(bullet)
+    if not game.over:
+        ship.rect.y += (ship.speed * ship.updown)
+        if ship.rect.y > screenbottom:
+            ship.rect.y = screentop
+        if ship.rect.y < screentop:
+            ship.rect.y = screenbottom
+        for bullet in bullets:
+            if bullet.image.get_size()[0]<bullet.max_size:
+                bullet.make_long(bullet.image.get_size()[0] + bullet.speed)
+            else: bullet.rect.x += bullet.speed
+            if bullet.rect.x > size[0]:
+                bullets.remove(bullet)
+                all_sprites_list.remove(bullet)
            
     # Let's add an alien if we need one
     add_alien = random.randint(0,10)
-    if add_alien == 9 and len(aliens) < 4:
+    if add_alien == 9 and len(aliens) < 4 and ((ship is None) or not ship.exploding):
         alien_y = random.randint(0,size[1])
         alien = Alien(alien_y)
         aliens.add(alien)
@@ -201,27 +220,35 @@ while not done:
             
         alien.switch_direction()
 
-    hit_list = pygame.sprite.groupcollide(aliens, bullets, True, True)
-    for hit in hit_list:
-        explosion_sound.play()
-        game.score += 1
-        # free ship every 100 points:
-        if game.score % 10 == 0:
-            game.lives += 1
-        explosion = Explosion(hit.rect.x, hit.rect.y)
-        all_sprites_list.add(explosion)
-        explosions.add(explosion)
+    if not game.over:
+        hit_list = pygame.sprite.groupcollide(aliens, bullets, True, True)
+        for hit in hit_list:
+            explosion_sound.play()
+            game.score += 1
+            # free ship every 100 points:
+            if game.score % 10 == 0:
+                game.lives += 1
+            explosion = Explosion(hit.rect.x, hit.rect.y)
+            all_sprites_list.add(explosion)
+            explosions.add(explosion)
 
-    hit = pygame.sprite.spritecollideany(ship,aliens)
-    if hit and not ship.exploding:
-        ship.explode()
+        hit = pygame.sprite.spritecollideany(ship,aliens)
+        if hit and not ship.exploding:
+            ship.explode()
+            game.lives -= 1
+            if game.lives == 0:
+                game.over = True
+            
+        for explosion in explosions:
+            explosion.life += 1
+            if explosion.life > 20:
+                explosion.kill()
+
+        if ship.exploding and len(aliens) == 0:
+            ship.kill()
+            ship = Ship()
+            all_sprites_list.add(ship)
         
-    for explosion in explosions:
-        explosion.life += 1
-        if explosion.life > 20:
-            explosion.kill()
-
-
  
     # --- Screen-clearing code goes here
     screen.fill(WHITE)
