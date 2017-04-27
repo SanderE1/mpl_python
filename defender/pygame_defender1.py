@@ -12,11 +12,7 @@ WHITE = (255, 255, 255)
 GREEN = (0, 255, 0)
 RED = (255, 0, 0)
 
-def update_score(screen, score):
-    message = "Score:{}".format(score)
-    font = pygame.font.SysFont("Verdana", 30)
-    text = font.render(message, False, BLACK)
-    screen.blit(text, (10, 10))
+
  
 pygame.init()
  
@@ -25,9 +21,7 @@ size = (800, 500)
 screenbottom = size[1]
 screentop = 0
 screen = pygame.display.set_mode(size)
-score = 0
-lives = 3
-ship_upgraded = 0
+
 
 # set up sprite lists
 all_sprites_list = pygame.sprite.Group()
@@ -47,6 +41,20 @@ done = False
 # Used to manage how fast the screen updates
 clock = pygame.time.Clock()
 
+class Game():
+    def __init__(self):
+        self.lives = 3
+        self.score = 0
+
+    def update_screen(self, screen):
+        message = "Score:{}".format(self.score)
+        font = pygame.font.SysFont("Verdana", 30)
+        text = font.render(message, False, BLACK)
+        screen.blit(text, (10, 10))
+        message = "Lives:{}".format(self.lives)
+        text = font.render(message, False, BLACK)
+        screen.blit(text, (600, 10))
+
 # our ship class
 class Ship(pygame.sprite.Sprite):
     def __init__(self):
@@ -59,6 +67,9 @@ class Ship(pygame.sprite.Sprite):
         self.updown = 0
         self.speed = 8
         self.exploding = False
+        self.broken = False
+        self.upgraded = 0
+
 
     def explode(self):
         ship.exploding = True
@@ -79,6 +90,7 @@ class Bullet(pygame.sprite.Sprite):
         self.speed = 20        
         self.min_size = 4
         self.max_size = self.image.get_size()[0]
+        
 
     def make_long(self, new_size):
         self.image = pygame.transform.scale(self.image2, (new_size, self.size[1]))
@@ -91,13 +103,14 @@ class Alien(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.rect.x = size[0] - 50
         self.rect.y = y
-        self.speed = 5
+        self.speedx = 5
+        self.speedy = 0
 
-    def move(self):
-        move = random.randint(0,10)
+    def switch_direction(self):
+        move = random.randint(0,25)
         if move == 9:
-            direction = random.randint(-1,1)
-            self.rect.y += direction * self.speed
+            self.speedy = random.randint(-1,1) * 3
+
 
 class Explosion(pygame.sprite.Sprite):
     def __init__(self, x, y):
@@ -112,13 +125,14 @@ class Explosion(pygame.sprite.Sprite):
  
 ship = Ship()
 all_sprites_list.add(ship)
+game = Game()
 
 # -------- Main Program Loop -----------
 while not done:
     # --- Main event loop
-    if score == 20 and ship_upgraded == 0:
-        ship_upgraded = 1
-        score = score - 20
+    if game.score == 20 and ship.upgraded == 0:
+        ship.upgraded = 1
+        game.score = game.score - 20
         ship.upgrade()
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -164,7 +178,7 @@ while not done:
             bullets.remove(bullet)
             all_sprites_list.remove(bullet)
            
-
+    # Let's add an alien if we need one
     add_alien = random.randint(0,10)
     if add_alien == 9 and len(aliens) < 4:
         alien_y = random.randint(0,size[1])
@@ -174,16 +188,26 @@ while not done:
 
     # move the aliens
     for alien in aliens:
-        alien.rect.x -= alien.speed
+        alien.rect.x -= alien.speedx
+        alien.rect.y += alien.speedy
         if alien.rect.x < 0:
             aliens.remove(alien)
             all_sprites_list.remove(alien)
-        alien.move()
+
+        if alien.rect.y < 0:
+            alien.rect.y = size[1]
+        elif alien.rect.y > size[1]:
+            alien.rect.y = 0
+            
+        alien.switch_direction()
 
     hit_list = pygame.sprite.groupcollide(aliens, bullets, True, True)
     for hit in hit_list:
         explosion_sound.play()
-        score += 1
+        game.score += 1
+        # free ship every 100 points:
+        if game.score % 10 == 0:
+            game.lives += 1
         explosion = Explosion(hit.rect.x, hit.rect.y)
         all_sprites_list.add(explosion)
         explosions.add(explosion)
@@ -197,16 +221,14 @@ while not done:
         if explosion.life > 20:
             explosion.kill()
 
-    # free ship every 100 points:
-    if score % 100 == 0:
-        lives += 1
+
  
     # --- Screen-clearing code goes here
     screen.fill(WHITE)
  
     # --- Drawing code should go here
     all_sprites_list.draw(screen)
-    update_score(screen,score)
+    game.update_screen(screen)
  
     # --- Go ahead and update the screen with what we've drawn.
     pygame.display.flip()
