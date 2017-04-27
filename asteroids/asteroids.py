@@ -1,6 +1,6 @@
-"""
-Asteroids!
-"""
+"""    
+A steroids!
+ """
  
 import pygame
 import math
@@ -12,13 +12,15 @@ def rotatePoint(centerPoint,point,angle):
     """Rotates a point around another centerPoint. Angle is in degrees.
     Rotation is counter-clockwise"""
     angle = math.radians(angle)
-    temp_point = point[0]-centerPoint[0] , point[1]-centerPoint[1]
+    temp_point = point[0]-centerPoint[0] , point[1]-centerPoint[1] 
     temp_point = ( temp_point[0]*math.cos(angle)-temp_point[1]*math.sin(angle) , temp_point[0]*math.sin(angle)+temp_point[1]*math.cos(angle))
     temp_point = temp_point[0]+centerPoint[0] , temp_point[1]+centerPoint[1]
-    return temp_point
+    return temp_point 
 
 def normalize_vector(vector):
     norm = math.sqrt(vector[0] ** 2 + vector[1] ** 2)
+    if norm == 0: 
+        norm = 1
     vector = [vector[0] / norm, vector[1] / norm]
     return vector
     
@@ -55,20 +57,22 @@ class Ship(pygame.sprite.Sprite):
     def __init__(self):
         pygame.sprite.Sprite.__init__(self)
         self.image = pygame.Surface([26,26])
-        self.pts = [[15, 0],[5,25], [15,15], [25,25]]
-        pygame.draw.aalines(self.image, WHITE, True, self.pts,2)
+        self.pts = [[15, 0],[5,25], [15,15], [25,25], [15,0]]
+        pygame.draw.lines(self.image, WHITE, True, self.pts,2)
         self.image.set_colorkey(BLACK)
         self.rect = self.image.get_rect()
         self.rect.x = 300
         self.rect.y = 300
         self.angle = 0
         self.speed = 0
+        self.alive = True
+        self.explode_frame = 0
 
     def rotate(self, angle):
         for i, pt in enumerate(self.pts):
             self.pts[i] = rotatePoint([13,13], pt, angle)
         self.image.fill(BLACK)
-        pygame.draw.lines(self.image, WHITE, True, self.pts,2)
+        pygame.draw.lines(self.image, WHITE, True, self.pts, 2)
 
     def get_direction(self):
         # we know pts[0] and pts[2] give us a vector we are "pointing" at:
@@ -76,6 +80,20 @@ class Ship(pygame.sprite.Sprite):
         # normalize:
         vector = normalize_vector(vector)
         return vector
+    
+    def explode(self):
+        for i in range(0, len(self.pts)):
+            if i % 2:
+                self.pts[i][0] -= 1
+            else:
+                self.pts[i][0] += 1
+        self.image.fill(BLACK)
+        pygame.draw.lines(self.image, WHITE, False, self.pts, 2)
+        self.speed = 0
+        self.explode_frame += 1
+
+
+
 
 class Bullet(pygame.sprite.Sprite):
     def __init__(self):
@@ -169,7 +187,7 @@ while not done:
             if event.key == pygame.K_UP:
                 ship.speed = 10
             if event.key == pygame.K_SPACE:
-                shoot_sound.play()
+                # shoot_sound.play()
                 bullet = Bullet()
                 bullet.rect = bullet.image.get_rect()
                 bullet.rect = copy.copy(ship.rect)
@@ -187,18 +205,24 @@ while not done:
     # --- Game logic should go here
 
     # update the ship:
-    if ship.angle != 0:
-        ship.rotate(ship.angle)
+    if ship.alive:
+        if ship.angle != 0:
+            ship.rotate(ship.angle)
 
-    vect = ship.get_direction()
-    ship.rect.x += (vect[0]*ship.speed)
-    ship.rect.y += (vect[1]*ship.speed)
-    wrap(ship)
-    # decay speed:
-    if ship.speed > 0:
-        ship.speed *= .99
-    if ship.speed < 0:
-        ship.speed = 0
+        vect = ship.get_direction()
+        ship.rect.x += (vect[0]*ship.speed)
+        ship.rect.y += (vect[1]*ship.speed)
+        wrap(ship)
+        # decay speed:
+        if ship.speed > 0:
+            ship.speed *= .99
+        if ship.speed < 0:
+            ship.speed = 0
+    elif ship.explode_frame < 20: # we're dead and/or exploding:
+        ship.explode()
+
+
+            
 
     # update all the bullets:
     for bullet in bullets:
@@ -230,7 +254,9 @@ while not done:
                 all_sprites_list.add(new_asteroid)
         asteroid.kill()
             
-            
+    if pygame.sprite.spritecollideany(ship, asteroids) and ship.alive:
+        ship.alive = False
+        
     
     
     
