@@ -58,6 +58,7 @@ class Game():
             message = "Lives:{}".format(self.lives)
             text = font.render(message, False, BLACK)
             screen.blit(text, (600, 10))
+            
         else:
             message = "Game Over!"
             message2 = "Press any key to play"
@@ -65,7 +66,7 @@ class Game():
             text = font.render(message, False, BLUE)
             screen.blit(text, (300, 200))
             text = font.render(message2, False, RED)
-            screen.blit(text, (300, 300))
+            screen.blit(text, (200, 300))
 
 # our ship class
 class Ship(pygame.sprite.Sprite):
@@ -82,12 +83,10 @@ class Ship(pygame.sprite.Sprite):
         self.broken = False
         self.upgraded = 0
 
-
     def explode(self):
         ship.exploding = True
         self.image = pygame.image.load("exploding.png").convert()
         self.image.set_colorkey(WHITE)
-
         
     def upgrade(self):
         self.image = pygame.image.load("coolship.png").convert()
@@ -124,7 +123,6 @@ class Alien(pygame.sprite.Sprite):
         move = random.randint(0,25)
         if move == 9:
             self.speedy = random.randint(-1,1) * 3
-
 
 class Explosion(pygame.sprite.Sprite):
     def __init__(self, x, y):
@@ -174,6 +172,7 @@ while not done:
             ship = Ship()
             game = Game()
             game.over = False
+            all_sprites_list.empty()
             all_sprites_list.add(ship)
         if event.type == pygame.KEYUP:
             # when you stop pressing, stop moving!
